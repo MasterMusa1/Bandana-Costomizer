@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Bandana Customizer</title>
     <link rel="stylesheet" href="tailwind.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Bebas+Neue&family=Anton&family=Teko:wght@400;700&family=Exo+2:wght@700&family=Chakra+Petch:wght@700&family=Rajdhani:wght@700&family=Audiowide&display=swap" rel="stylesheet">
@@ -11,6 +11,8 @@
         body {
             background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
             font-family: 'Orbitron', sans-serif;
+            overscroll-behavior: none;
+            touch-action: manipulation;
         }
         #canvas-container {
             position: relative;
@@ -21,7 +23,7 @@
             border-radius: 10px;
             overflow: hidden;
         }
-        #imageCanvas { width: 100%; height: 100%; }
+        #imageCanvas { width: 100%; height: 100%; touch-action: none; }
         .hue-btn {
             padding: 8px 16px;
             border-radius: 6px;
@@ -38,6 +40,7 @@
             align-items: center;
             justify-content: center;
             min-width: 80px;
+            touch-action: manipulation;
         }
         .hue-btn:hover:not(:disabled) {
             transform: scale(1.05);
@@ -70,6 +73,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
+            touch-action: manipulation;
         }
         .upgraded-btn:hover:not(:disabled) {
             transform: scale(1.05);
@@ -99,6 +103,7 @@
             border: 2px solid #00f7ff;
             box-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
             transition: box-shadow 0.3s ease;
+            touch-action: manipulation;
         }
         .larger-input:hover {
             box-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
@@ -300,25 +305,56 @@
 
         const canvas = new fabric.Canvas('imageCanvas', {
             backgroundColor: '#1e1e2f',
-            preserveObjectStacking: true
+            preserveObjectStacking: true,
+            enableRetinaScaling: true
         });
         let history = [];
         let redoStack = [];
         let currentBandana = null;
+        let originalCanvasWidth = 1200;
+        let originalCanvasHeight = 800;
+
+        // Debounce function to limit render calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
         // Handle canvas resizing for responsiveness
         function resizeCanvas() {
-            const container = document.getElementById('canvas-container');
-            const maxWidth = Math.min(container.offsetWidth, 1200);
-            const canvasWidth = canvas.getWidth();
-            const canvasHeight = canvas.getHeight();
-            const scale = Math.min(maxWidth / canvasWidth, 1);
-            canvas.setZoom(scale);
-            canvas.setWidth(canvasWidth * scale);
-            canvas.setHeight(canvasHeight * scale);
-            canvas.renderAll();
+            try {
+                const container = document.getElementById('canvas-container');
+                const maxWidth = Math.min(container.offsetWidth, 1200);
+                const maxHeight = window.innerHeight * 0.6; // Limit height on mobile
+                const aspectRatio = originalCanvasWidth / originalCanvasHeight;
+                let newWidth = maxWidth;
+                let newHeight = newWidth / aspectRatio;
+
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = newHeight * aspectRatio;
+                }
+
+                canvas.setWidth(originalCanvasWidth);
+                canvas.setHeight(originalCanvasHeight);
+                const scale = Math.min(newWidth / originalCanvasWidth, newHeight / originalCanvasHeight);
+                canvas.setZoom(scale);
+                canvas.setDimensions({ width: originalCanvasWidth * scale, height: originalCanvasHeight * scale }, { cssOnly: true });
+                canvas.renderAll();
+            } catch (error) {
+                console.error('Resize canvas error:', error);
+            }
         }
-        window.addEventListener('resize', resizeCanvas);
+        const debouncedResizeCanvas = debounce(resizeCanvas, 100);
+        window.addEventListener('resize', debouncedResizeCanvas);
+        window.addEventListener('orientationchange', debouncedResizeCanvas);
 
         // Error handling for image loading
         function loadImage(url, callback) {
@@ -329,14 +365,18 @@
 
         // Save canvas state
         function saveState() {
-            redoStack = [];
-            history.push(JSON.stringify(canvas));
-            document.getElementById('redoBtn').disabled = true;
-            document.getElementById('undoBtn').disabled = history.length <= 1;
-            document.getElementById('deleteBtn').disabled = !canvas.getActiveObject();
-            document.getElementById('lockBtn').disabled = !canvas.getActiveObject();
-            updateLockButton();
-            updateHueButtons();
+            try {
+                redoStack = [];
+                history.push(JSON.stringify(canvas));
+                document.getElementById('redoBtn').disabled = true;
+                document.getElementById('undoBtn').disabled = history.length <= 1;
+                document.getElementById('deleteBtn').disabled = !canvas.getActiveObject();
+                document.getElementById('lockBtn').disabled = !canvas.getActiveObject();
+                updateLockButton();
+                updateHueButtons();
+            } catch (error) {
+                console.error('Save state error:', error);
+            }
         }
 
         // Update lock button text and state
@@ -396,8 +436,19 @@
                 reader.onload = function(event) {
                     const img = new Image();
                     img.onload = function() {
-                        canvas.setWidth(img.width);
-                        canvas.setHeight(img.height);
+                        // Cap image dimensions to prevent memory issues
+                        const maxDimension = 1200;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxDimension || height > maxDimension) {
+                            const ratio = Math.min(maxDimension / width, maxDimension / height);
+                            width = width * ratio;
+                            height = height * ratio;
+                        }
+                        originalCanvasWidth = width;
+                        originalCanvasHeight = height;
+                        canvas.setWidth(width);
+                        canvas.setHeight(height);
                         const imgObj = new fabric.Image(img, {
                             left: 0,
                             top: 0,
@@ -407,7 +458,7 @@
                         });
                         canvas.clear();
                         canvas.add(imgObj);
-                        resizeCanvas();
+                        debouncedResizeCanvas();
                         saveState();
                         canvas.renderAll();
                     };
@@ -510,7 +561,7 @@
                     selectable: true,
                     hasControls: true,
                     evented: true,
-                    shadow: '2px 2px 4px rgba(0, 0, 0, 0.5), -1px -1px 2px rgba(0, 247, 255, 0.3), 3px 3px 6px rgba(0, 0, 0, 0.4)'
+                    shadow: '2px 2px 4px rgba(0, 0, 0, 0.3), -1px -1px 2px rgba(0, 247, 255, 0.2)' // Simplified shadow
                 });
                 canvas.add(textObj);
                 saveState();
@@ -546,7 +597,7 @@
             if (activeObject && activeObject.type === 'text') {
                 activeObject.set('fontFamily', e.target.value);
                 activeObject.set('fontWeight', 'bold');
-                activeObject.set('shadow', '2px 2px 4px rgba(0, 0, 0, 0.5), -1px -1px 2px rgba(0, 247, 255, 0.3), 3px 3px 6px rgba(0, 0, 0, 0.4)');
+                activeObject.set('shadow', '2px 2px 4px rgba(0, 0, 0, 0.3), -1px -1px 2px rgba(0, 247, 255, 0.2)');
                 canvas.renderAll();
                 saveState();
             }
@@ -560,7 +611,7 @@
                 activeObject.set({
                     fontWeight: 'bold',
                     fontStyle: style.includes('italic') ? 'italic' : 'normal',
-                    shadow: '2px 2px 4px rgba(0, 0, 0, 0.5), -1px -1px 2px rgba(0, 247, 255, 0.3), 3px 3px 6px rgba(0, 0, 0, 0.4)'
+                    shadow: '2px 2px 4px rgba(0, 0, 0, 0.3), -1px -1px 2px rgba(0, 247, 255, 0.2)'
                 });
                 canvas.renderAll();
                 saveState();
@@ -632,7 +683,7 @@
                     document.getElementById('undoBtn').disabled = history.length <= 1;
                     document.getElementById('redoBtn').disabled = false;
                     currentBandana = canvas.getObjects().find(obj => obj.filters && obj.filters.length > 0 && obj.selectable);
-                    resizeCanvas();
+                    debouncedResizeCanvas();
                     updateButtonStates();
                 }, (err) => {
                     alert('Failed to undo changes.');
@@ -650,7 +701,7 @@
                     document.getElementById('redoBtn').disabled = redoStack.length === 0;
                     document.getElementById('undoBtn').disabled = false;
                     currentBandana = canvas.getObjects().find(obj => obj.filters && obj.filters.length > 0 && obj.selectable);
-                    resizeCanvas();
+                    debouncedResizeCanvas();
                     updateButtonStates();
                 }, (err) => {
                     alert('Failed to redo changes.');
@@ -661,6 +712,11 @@
         // Download with Watermark
         document.getElementById('downloadBtn').addEventListener('click', function() {
             try {
+                // Temporarily reset zoom for download
+                const currentZoom = canvas.getZoom();
+                canvas.setZoom(1);
+                canvas.setDimensions({ width: originalCanvasWidth, height: originalCanvasHeight }, { cssOnly: true });
+
                 // Create watermark
                 const watermark = new fabric.Text('bandana_Sol', {
                     fontSize: 16,
@@ -670,12 +726,12 @@
                     evented: false
                 });
 
-                // Dynamically position watermark in bottom-right corner
+                // Position watermark in bottom-right corner
                 canvas.add(watermark);
                 const textBounds = watermark.getBoundingRect();
                 watermark.set({
-                    left: canvas.width - textBounds.width - 10, // 10px margin from right
-                    top: canvas.height - textBounds.height - 10 // 10px margin from bottom
+                    left: originalCanvasWidth - textBounds.width - 10, // 10px margin from right
+                    top: originalCanvasHeight - textBounds.height - 10 // 10px margin from bottom
                 });
                 canvas.renderAll();
 
@@ -686,11 +742,17 @@
                 link.download = 'custom_bandana.png';
                 link.click();
 
-                // Remove watermark after download
+                // Remove watermark and restore zoom
                 canvas.remove(watermark);
+                canvas.setZoom(currentZoom);
+                canvas.setDimensions({ 
+                    width: originalCanvasWidth * currentZoom, 
+                    height: originalCanvasHeight * currentZoom 
+                }, { cssOnly: true });
                 canvas.renderAll();
             } catch (error) {
                 alert('Failed to download image. Ensure all overlays are loaded correctly.');
+                console.error('Download error:', error);
             }
         });
 
@@ -706,7 +768,9 @@
         // Initialize canvas with default size
         canvas.setWidth(1200);
         canvas.setHeight(800);
-        resizeCanvas();
+        originalCanvasWidth = 1200;
+        originalCanvasHeight = 800;
+        debouncedResizeCanvas();
         updateButtonStates();
     </script>
 </body>
