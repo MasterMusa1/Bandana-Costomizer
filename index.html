@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandana Customizer</title>
+    <link rel="stylesheet" href="tailwind.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Bebas+Neue&family=Anton&family=Teko:wght@400;700&family=Exo+2:wght@700&family=Chakra+Petch:wght@700&family=Rajdhani:wght@700&family=Audiowide&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
+            font-family: 'Orbitron', sans-serif;
+        }
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            border: 2px solid #00f7ff;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #imageCanvas { width: 100%; height: 100%; }
+        .hue-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: linear-gradient(45deg, var(--hue-color-start), var(--hue-color-end));
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 2px solid rgba(0, 247, 255, 0.7);
+            box-shadow: 0 0 8px rgba(0, 247, 255, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+        }
+        .hue-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 12px var(--hue-color-start), 0 0 16px var(--hue-color-end);
+        }
+        .hue-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        .hue-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        .social-icon:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 8px #00f7ff);
+        }
+        .upgraded-btn {
+            background: linear-gradient(45deg, #ff007a, #00f7ff);
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 247, 255, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 247, 255, 0.3), inset 0 0 5px rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .upgraded-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 247, 255, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.3);
+            background: linear-gradient(45deg, #ff3399, #33f7ff);
+        }
+        .upgraded-btn:active:not(:disabled) {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(0, 247, 255, 0.4);
+        }
+        .upgraded-btn:disabled {
+            background: linear-gradient(45deg, #4a1e3a, #1e4a4a);
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .control-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid rgba(0, 247, 255, 0.3);
+        }
+        .larger-input {
+            padding: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #00f7ff;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
+            transition: box-shadow 0.3s ease;
+        }
+        .larger-input:hover {
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
+        }
+        .social-text {
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 247, 255, 0.7);
+        }
+        .credit-text {
+            color: #00f7ff;
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        .custom-control {
+            width: 8px !important;
+            height: 8px !important;
+            background: #00f7ff !important;
+            border: 1px solid #1e1e2f !important;
+            border-radius: 50% !important;
+            box-shadow: 0 0 5px rgba(0, 247, 255, 0.7) !important;
+        }
+        .custom-rotate {
+            width: 12px !important;
+            height: 12px !important;
+            background: #ff007a !important;
+            border: 1px solid #1e1e2f !important;
+            border-radius: 50% !important;
+            box-shadow: 0 0 5px rgba(255, 0, 122, 0.7) !important;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-4">
+    <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-cyan-400 mb-2 pulse-animation">Bandana Customizer</h1>
+    <p class="text-lg text-cyan-300 mb-6">Craft your futuristic bandana masterpiece!</p>
+
+    <div id="canvas-container" class="bg-gray-900 shadow-2xl rounded-lg mb-6">
+        <canvas id="imageCanvas"></canvas>
+    </div>
+
+    <div class="w-full max-w-lg space-y-4 control-container">
+        <!-- Image Upload -->
+        <div>
+            <label class="block text-sm font-medium text-cyan-300 mb-1">Upload Base Image</label>
+            <input type="file" id="imageUpload" accept="image/*" class="w-full larger-input border rounded-md bg-gray-800 text-white">
+        </div>
+
+        <!-- Bandana Overlays -->
+        <div>
+            <label for="bandanaSelect" class="block text-sm font-medium text-cyan-300 mb-1">Bandana Overlays</label>
+            <select id="bandanaSelect" class="w-full larger-input border rounded-md bg-gray-800 text-white">
+                <option value="">Select Bandana</option>
+                <option value="https://i.imgur.com/JjbEt47.png">Paisley Design</option>
+                <option value="https://i.imgur.com/hbpJtdo.png">USA Design</option>
+                <option value="https://i.imgur.com/1P7nden.png">Bandana with Hair</option>
+                <option value="https://i.imgur.com/1x6RDiH.png">Paisley Design 2</option>
+                <option value="https://i.imgur.com/9bmIc1t.png">Paisley Design 3</option>
+                <option value="https://i.imgur.com/2IA7MMP.png">Paisley Design ft SOL</option>
+                <option value="https://i.imgur.com/rT1olJI.png">Tech Design</option>
+                <option value="https://i.imgur.com/McFB24z.png">B&W Paisley</option>
+            </select>
+            <label class="block text-sm font-medium text-cyan-300 mt-2 mb-1">Hue Adjustment</label>
+            <div id="hueButtons" class="flex flex-row flex-wrap gap-2">
+                <button class="hue-btn" style="--hue-color-start: #ff0000; --hue-color-end: #ff6666;" data-hue="0">Red</button>
+                <button class="hue-btn" style="--hue-color-start: #ff6600; --hue-color-end: #ff9933;" data-hue="30">Orange</button>
+                <button class="hue-btn" style="--hue-color-start: #ffcc00; --hue-color-end: #ffcc66;" data-hue="60">Yellow</button>
+                <button class="hue-btn" style="--hue-color-start: #99ff00; --hue-color-end: #ccff66;" data-hue="90">Lime</button>
+                <button class="hue-btn" style="--hue-color-start: #00ff00; --hue-color-end: #66ff66;" data-hue="120">Green</button>
+                <button class="hue-btn" style="--hue-color-start: #00cc99; --hue-color-end: #66e6b3;" data-hue="150">Teal</button>
+                <button class="hue-btn" style="--hue-color-start: #00ccff; --hue-color-end: #66e6ff;" data-hue="180">Cyan</button>
+                <button class="hue-btn" style="--hue-color-start: #0033ff; --hue-color-end: #6666ff;" data-hue="210">Indigo</button>
+                <button class="hue-btn" style="--hue-color-start: #0000ff; --hue-color-end: #6666ff;" data-hue="240">Blue</button>
+                <button class="hue-btn" style="--hue-color-start: #9900ff; --hue-color-end: #cc66ff;" data-hue="270">Purple</button>
+                <button class="hue-btn" style="--hue-color-start: #cc00ff; --hue-color-end: #e666ff;" data-hue="285">Violet</button>
+                <button class="hue-btn" style="--hue-color-start: #ff00ff; --hue-color-end: #ff66ff;" data-hue="300">Magenta</button>
+                <button class="hue-btn" style="--hue-color-start: #ff007a; --hue-color-end: #ff66b3;" data-hue="330">Pink</button>
+                <button class="hue-btn" style="--hue-color-start: #ff3333; --hue-color-end: #ff6666;" data-hue="0">Reset</button>
+            </div>
+        </div>
+
+        <!-- Logo Overlays -->
+        <div>
+            <label for="logoSelect" class="block text-sm font-medium text-cyan-300 mb-1">Logo Overlays</label>
+            <select id="logoSelect" class="w-full larger-input border rounded-md bg-gray-800 text-white">
+                <option value="">Select Logo</option>
+                <option value="https://i.imgur.com/WBqPaQB.png">SOL</option>
+                <option value="https://i.imgur.com/MX10kLM.png">X</option>
+                <option value="https://i.imgur.com/ww2FqF2.png">USA</option>
+                <option value="https://i.imgur.com/JsRg8u3.png">GROK</option>
+            </select>
+        </div>
+
+        <!-- Text Overlay -->
+        <div>
+            <label for="textInput" class="block text-sm font-medium text-cyan-300 mb-1">Add Text</label>
+            <input type="text" id="textInput" placeholder="Enter text" class="w-full larger-input border rounded-md bg-gray-800 text-white mb-2">
+            <label for="fontSelect" class="block text-sm font-medium text-cyan-300 mb-1">Font</label>
+            <select id="fontSelect" class="w-full larger-input border rounded-md bg-gray-800 text-white mb-2">
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Anton">Anton</option>
+                <option value="Teko">Teko</option>
+                <option value="Exo 2">Exo 2</option>
+                <option value="Chakra Petch">Chakra Petch</option>
+                <option value="Rajdhani">Rajdhani</option>
+                <option value="Audiowide">Audiowide</option>
+                <option value="Orbitron">Orbitron</option>
+            </select>
+            <label for="styleSelect" class="block text-sm font-medium text-cyan-300 mb-1">Text Style</label>
+            <select id="styleSelect" class="w-full larger-input border rounded-md bg-gray-800 text-white mb-2">
+                <option value="bold">Bold</option>
+                <option value="bold italic">Bold Italic</option>
+            </select>
+            <label for="textColorSelect" class="block text-sm font-medium text-cyan-300 mb-1">Text Color (Presets)</label>
+            <select id="textColorSelect" class="w-full larger-input border rounded-md bg-gray-800 text-white mb-2">
+                <option value="#00f7ff">Cyan</option>
+                <option value="#ff007a">Neon Pink</option>
+                <option value="#00ff00">Lime</option>
+                <option value="#ff9900">Neon Orange</option>
+                <option value="#9900ff">Purple</option>
+                <option value="#ff00ff">Magenta</option>
+                <option value="#ff0000">Red</option>
+                <option value="#ffffff">White</option>
+                <option value="#ffd700">Gold</option>
+            </select>
+            <label for="textColor" class="block text-sm font-medium text-cyan-300 mb-1">Text Color (Custom)</label>
+            <input type="color" id="textColor" value="#00f7ff" class="w-full h-12 larger-input border rounded-md bg-gray-800">
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-wrap gap-2">
+            <button id="undoBtn" class="flex-1 upgraded-btn" disabled>Undo</button>
+            <button id="redoBtn" class="flex-1 upgraded-btn" disabled>Redo</button>
+            <button id="lockBtn" class="flex-1 upgraded-btn" disabled>Lock Selected</button>
+            <button id="unlockAllBtn" class="flex-1 upgraded-btn">Unlock All</button>
+            <button id="deleteBtn" class="flex-1 upgraded-btn" disabled>Delete Selected</button>
+            <button id="downloadBtn" class="flex-1 upgraded-btn">Download</button>
+        </div>
+    </div>
+
+    <!-- Social Media Links and Credit Note -->
+    <div class="mt-6 text-center">
+        <p class="text-2xl text-cyan-300 social-text mb-2">Join Our Socials</p>
+        <div class="flex justify-center space-x-4">
+            <a href="https://x.com/Bandana_sol" target="_blank" class="text-cyan-300 hover:text-neon-pink">
+                <img src="https://i.imgur.com/MX10kLM.png" alt="X Logo" class="social-icon">
+            </a>
+            <a href="https://t.me/bandana_sol" target="_blank" class="text-cyan-300 hover:text-neon-pink">
+                <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.88 8.8c-.14.66-.76.94-1.26.5l-2.84-2.1-1.36 1.32c-.15.15-.35.24-.56.24l.2-2.84 5.14-4.66c.22-.2.1-.62-.24-.42l-6.34 3.98-2.74-.86c-.66-.2-.68-1.06.02-1.36l10.68-4.1c.54-.2 1.02.14.98.7z"/>
+                </svg>
+            </a>
+        </div>
+        <p class="mt-4 text-sm credit-text">The website code was generated by Grok</p>
+    </div>
+
+    <script>
+        // Customize Fabric.js controls
+        fabric.Object.prototype.set({
+            cornerSize: 8,
+            cornerStyle: 'circle',
+            cornerColor: '#00f7ff',
+            cornerStrokeColor: '#1e1e2f',
+            cornerBackgroundColor: '#00f7ff',
+            rotatingPointOffset: 20,
+            controls: {
+                ...fabric.Object.prototype.controls,
+                mtr: new fabric.Control({
+                    x: 0,
+                    y: -0.5,
+                    offsetY: -20,
+                    cursorStyle: 'pointer',
+                    actionHandler: fabric.controlsUtils.rotationWithSnapping,
+                    actionName: 'rotate',
+                    render: function(ctx, left, top, styleOverride, fabricObject) {
+                        ctx.save();
+                        ctx.translate(left, top);
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+                        ctx.fillStyle = '#ff007a';
+                        ctx.strokeStyle = '#1e1e2f';
+                        ctx.lineWidth = 1;
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.restore();
+                    },
+                    cornerSize: 12
+                })
+            }
+        });
+
+        const canvas = new fabric.Canvas('imageCanvas', {
+            backgroundColor: '#1e1e2f',
+            preserveObjectStacking: true
+        });
+        let history = [];
+        let redoStack = [];
+        let currentBandana = null;
+
+        // Handle canvas resizing for responsiveness
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const maxWidth = Math.min(container.offsetWidth, 1200);
+            const canvasWidth = canvas.getWidth();
+            const canvasHeight = canvas.getHeight();
+            const scale = Math.min(maxWidth / canvasWidth, 1);
+            canvas.setZoom(scale);
+            canvas.setWidth(canvasWidth * scale);
+            canvas.setHeight(canvasHeight * scale);
+            canvas.renderAll();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Error handling for image loading
+        function loadImage(url, callback) {
+            fabric.Image.fromURL(url, callback, {
+                crossOrigin: 'anonymous'
+            });
+        }
+
+        // Save canvas state
+        function saveState() {
+            redoStack = [];
+            history.push(JSON.stringify(canvas));
+            document.getElementById('redoBtn').disabled = true;
+            document.getElementById('undoBtn').disabled = history.length <= 1;
+            document.getElementById('deleteBtn').disabled = !canvas.getActiveObject();
+            document.getElementById('lockBtn').disabled = !canvas.getActiveObject();
+            updateLockButton();
+            updateHueButtons();
+        }
+
+        // Update lock button text and state
+        function updateLockButton() {
+            const activeObject = canvas.getActiveObject();
+            const lockBtn = document.getElementById('lockBtn');
+            if (activeObject && !activeObject.selectable) {
+                lockBtn.textContent = 'Unlock Selected';
+            } else {
+                lockBtn.textContent = 'Lock Selected';
+            }
+        }
+
+        // Update hue buttons state
+        function updateHueButtons() {
+            const activeObject = canvas.getActiveObject();
+            const hueButtons = document.querySelectorAll('#hueButtons .hue-btn');
+            hueButtons.forEach(button => {
+                button.disabled = !(activeObject && activeObject.filters && activeObject.filters.length > 0 && activeObject.selectable);
+            });
+        }
+
+        // Update button states after canvas changes
+        function updateButtonStates() {
+            const activeObject = canvas.getActiveObject();
+            document.getElementById('deleteBtn').disabled = !activeObject;
+            document.getElementById('lockBtn').disabled = !activeObject;
+            updateLockButton();
+            updateHueButtons();
+        }
+
+        // Update button states on selection changes
+        canvas.on('selection:created', updateButtonStates);
+        canvas.on('selection:updated', () => {
+            updateButtonStates();
+            const activeObject = canvas.getActiveObject();
+            if (activeObject && activeObject.type === 'text') {
+                document.getElementById('fontSelect').value = activeObject.fontFamily || 'Bebas Neue';
+                document.getElementById('styleSelect').value = 
+                    (activeObject.fontWeight === 'bold' && activeObject.fontStyle === 'italic') ? 'bold italic' : 'bold';
+                document.getElementById('textColorSelect').value = activeObject.fill || '#00f7ff';
+                document.getElementById('textColor').value = activeObject.fill || '#00f7ff';
+            }
+        });
+        canvas.on('selection:cleared', () => {
+            document.getElementById('deleteBtn').disabled = true;
+            document.getElementById('lockBtn').disabled = true;
+            document.getElementById('lockBtn').textContent = 'Lock Selected';
+            updateHueButtons();
+        });
+
+        // Image Upload
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        canvas.setWidth(img.width);
+                        canvas.setHeight(img.height);
+                        const imgObj = new fabric.Image(img, {
+                            left: 0,
+                            top: 0,
+                            scaleX: 1,
+                            scaleY: 1,
+                            selectable: false
+                        });
+                        canvas.clear();
+                        canvas.add(imgObj);
+                        resizeCanvas();
+                        saveState();
+                        canvas.renderAll();
+                    };
+                    img.onerror = function() {
+                        alert('Failed to load uploaded image.');
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Bandana Overlay Selection
+        document.getElementById('bandanaSelect').addEventListener('change', function(e) {
+            const url = e.target.value;
+            if (url) {
+                loadImage(url, function(img, error) {
+                    if (error) {
+                        alert('Failed to load bandana overlay.');
+                        return;
+                    }
+                    img.set({
+                        left: canvas.width / 4,
+                        top: canvas.height / 4,
+                        scaleX: 0.5,
+                        scaleY: 0.5,
+                        selectable: true,
+                        hasControls: true,
+                        evented: true
+                    });
+                    img.filters = [new fabric.Image.filters.HueRotation()];
+                    canvas.add(img);
+                    currentBandana = img;
+                    canvas.setActiveObject(img);
+                    saveState();
+                    canvas.renderAll();
+                });
+            }
+        });
+
+        // Hue Adjustment
+        document.querySelectorAll('#hueButtons .hue-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const activeObject = canvas.getActiveObject();
+                if (activeObject && activeObject.filters && activeObject.filters.length > 0 && activeObject.selectable) {
+                    const hue = parseFloat(this.getAttribute('data-hue')) / 360;
+                    activeObject.filters[0].rotation = hue;
+                    activeObject.applyFilters();
+                    currentBandana = activeObject;
+                    canvas.renderAll();
+                    saveState();
+                    console.log('Hue applied:', hue, 'to object:', activeObject);
+                } else {
+                    alert('Please select an unlocked bandana overlay to adjust hue.');
+                    console.log('No valid bandana selected. Active object:', activeObject);
+                }
+            });
+        });
+
+        // Logo Overlay Selection
+        document.getElementById('logoSelect').addEventListener('change', function(e) {
+            const url = e.target.value;
+            if (url) {
+                loadImage(url, function(img, error) {
+                    if (error) {
+                        alert('Failed to load logo overlay.');
+                        return;
+                    }
+                    img.set({
+                        left: canvas.width / 4,
+                        top: canvas.height / 4,
+                        scaleX: 0.5,
+                        scaleY: 0.5,
+                        selectable: true,
+                        hasControls: true,
+                        evented: true
+                    });
+                    canvas.add(img);
+                    saveState();
+                    canvas.renderAll();
+                });
+            }
+        });
+
+        // Text Overlay
+        document.getElementById('textInput').addEventListener('change', function(e) {
+            const text = e.target.value;
+            const color = document.getElementById('textColor').value;
+            const font = document.getElementById('fontSelect').value;
+            const style = document.getElementById('styleSelect').value;
+            if (text) {
+                const textObj = new fabric.Text(text, {
+                    left: canvas.width / 4,
+                    top: canvas.height / 4,
+                    fontSize: 20,
+                    fill: color,
+                    fontFamily: font,
+                    fontWeight: 'bold',
+                    fontStyle: style.includes('italic') ? 'italic' : 'normal',
+                    selectable: true,
+                    hasControls: true,
+                    evented: true,
+                    shadow: '2px 2px 4px rgba(0, 0, 0, 0.5), -1px -1px 2px rgba(0, 247, 255, 0.3), 3px 3px 6px rgba(0, 0, 0, 0.4)'
+                });
+                canvas.add(textObj);
+                saveState();
+                canvas.renderAll();
+            }
+        });
+
+        // Text Color Change (Custom)
+        document.getElementById('textColor').addEventListener('input', function(e) {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject && activeObject.type === 'text') {
+                activeObject.set('fill', e.target.value);
+                document.getElementById('textColorSelect').value = e.target.value;
+                canvas.renderAll();
+                saveState();
+            }
+        });
+
+        // Text Color Change (Presets)
+        document.getElementById('textColorSelect').addEventListener('change', function(e) {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject && activeObject.type === 'text') {
+                activeObject.set('fill', e.target.value);
+                document.getElementById('textColor').value = e.target.value;
+                canvas.renderAll();
+                saveState();
+            }
+        });
+
+        // Font Change
+        document.getElementById('fontSelect').addEventListener('change', function(e) {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject && activeObject.type === 'text') {
+                activeObject.set('fontFamily', e.target.value);
+                activeObject.set('fontWeight', 'bold');
+                activeObject.set('shadow', '2px 2px 4px rgba(0, 0, 0, 0.5), -1px -1px 2px rgba(0, 247, 255, 0.3), 3px 3px 6px rgba(0, 0, 0, 0.4)');
+                canvas.renderAll();
+                saveState();
+            }
+        });
+
+        // Style Change
+        document.getElementById('styleSelect').addEventListener('change', function(e) {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject && activeObject.type === 'text') {
+                const style = e.target.value;
+                activeObject.set({
+                    fontWeight: 'bold',
+                    fontStyle: style.includes('italic') ? 'italic' : 'normal',
+                    shadow: '2px 2px 4px rgba(0, 0, 0, 0.5), -1px -1px 2px rgba(0, 247, 255, 0.3), 3px 3px 6px rgba(0, 0, 0, 0.4)'
+                });
+                canvas.renderAll();
+                saveState();
+            }
+        });
+
+        // Lock/Unlock Selected Object
+        document.getElementById('lockBtn').addEventListener('click', function() {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                const isLocked = !activeObject.selectable;
+                activeObject.set({
+                    selectable: isLocked,
+                    hasControls: isLocked,
+                    evented: isLocked
+                });
+                if (!isLocked && activeObject === currentBandana) {
+                    currentBandana = null;
+                } else if (isLocked && activeObject.filters && activeObject.filters.length > 0) {
+                    currentBandana = activeObject;
+                }
+                canvas.discardActiveObject();
+                canvas.renderAll();
+                saveState();
+                updateButtonStates();
+            }
+        });
+
+        // Unlock All Objects
+        document.getElementById('unlockAllBtn').addEventListener('click', function() {
+            const objects = canvas.getObjects();
+            objects.forEach(obj => {
+                if (obj !== canvas.getObjects()[0]) { // Skip base image
+                    obj.set({
+                        selectable: true,
+                        hasControls: true,
+                        evented: true
+                    });
+                }
+            });
+            currentBandana = canvas.getObjects().find(obj => obj.filters && obj.filters.length > 0 && obj.selectable);
+            canvas.discardActiveObject();
+            canvas.renderAll();
+            saveState();
+            updateButtonStates();
+        });
+
+        // Delete Selected Object
+        document.getElementById('deleteBtn').addEventListener('click', function() {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                canvas.remove(activeObject);
+                if (activeObject === currentBandana) {
+                    currentBandana = null;
+                }
+                canvas.discardActiveObject();
+                saveState();
+                canvas.renderAll();
+                updateButtonStates();
+            }
+        });
+
+        // Undo
+        document.getElementById('undoBtn').addEventListener('click', function() {
+            if (history.length > 1) {
+                redoStack.push(history.pop());
+                canvas.loadFromJSON(history[history.length - 1], () => {
+                    canvas.renderAll();
+                    document.getElementById('undoBtn').disabled = history.length <= 1;
+                    document.getElementById('redoBtn').disabled = false;
+                    currentBandana = canvas.getObjects().find(obj => obj.filters && obj.filters.length > 0 && obj.selectable);
+                    resizeCanvas();
+                    updateButtonStates();
+                }, (err) => {
+                    alert('Failed to undo changes.');
+                });
+            }
+        });
+
+        // Redo
+        document.getElementById('redoBtn').addEventListener('click', function() {
+            if (redoStack.length > 0) {
+                const state = redoStack.pop();
+                history.push(state);
+                canvas.loadFromJSON(state, () => {
+                    canvas.renderAll();
+                    document.getElementById('redoBtn').disabled = redoStack.length === 0;
+                    document.getElementById('undoBtn').disabled = false;
+                    currentBandana = canvas.getObjects().find(obj => obj.filters && obj.filters.length > 0 && obj.selectable);
+                    resizeCanvas();
+                    updateButtonStates();
+                }, (err) => {
+                    alert('Failed to redo changes.');
+                });
+            }
+        });
+
+        // Download with Watermark
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            try {
+                // Create watermark
+                const watermark = new fabric.Text('bandana_Sol', {
+                    fontSize: 16,
+                    fill: 'rgba(0, 247, 255, 0.7)', // Neon cyan, semi-transparent
+                    fontFamily: 'Orbitron',
+                    selectable: false,
+                    evented: false
+                });
+
+                // Dynamically position watermark in bottom-right corner
+                canvas.add(watermark);
+                const textBounds = watermark.getBoundingRect();
+                watermark.set({
+                    left: canvas.width - textBounds.width - 10, // 10px margin from right
+                    top: canvas.height - textBounds.height - 10 // 10px margin from bottom
+                });
+                canvas.renderAll();
+
+                // Generate and download image
+                const dataURL = canvas.toDataURL({ format: 'png', quality: 1 });
+                const link = document.createElement('a');
+                link.href = dataURL;
+                link.download = 'custom_bandana.png';
+                link.click();
+
+                // Remove watermark after download
+                canvas.remove(watermark);
+                canvas.renderAll();
+            } catch (error) {
+                alert('Failed to download image. Ensure all overlays are loaded correctly.');
+            }
+        });
+
+        // Enable multi-touch and handle controls
+        canvas.on('object:modified', saveState);
+        canvas.on('object:moving', saveState);
+        canvas.on('object:scaling', saveState);
+        canvas.on('object:rotating', saveState);
+        canvas.set('selection', true);
+        canvas.set('selectionBorderColor', '#00f7ff');
+        canvas.set('selectionLineWidth', 2);
+
+        // Initialize canvas with default size
+        canvas.setWidth(1200);
+        canvas.setHeight(800);
+        resizeCanvas();
+        updateButtonStates();
+    </script>
+</body>
+</html>
