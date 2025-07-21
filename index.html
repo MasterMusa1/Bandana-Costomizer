@@ -725,7 +725,7 @@
                 const currentWidth = canvas.width;
                 const currentHeight = canvas.height;
 
-                // Calculate bounding box of all objects
+                // Calculate bounding box of all objects (excluding watermark)
                 const objects = canvas.getObjects();
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 objects.forEach(obj => {
@@ -741,7 +741,17 @@
                 const exportWidth = Math.max(originalCanvasWidth, maxX - minX + 2 * padding);
                 const exportHeight = Math.max(originalCanvasHeight, maxY - minY + 2 * padding);
 
-                // Create watermark
+                // Center content by adjusting offsets
+                const offsetX = (exportWidth - (maxX - minX)) / 2 - minX;
+                const offsetY = (exportHeight - (maxY - minY)) / 2 - minY;
+
+                // Adjust canvas for export
+                canvas.setZoom(1);
+                canvas.setWidth(exportWidth);
+                canvas.setHeight(exportHeight);
+                canvas.setViewportTransform([1, 0, 0, 1, offsetX, offsetY]);
+
+                // Create and add watermark
                 const watermark = new fabric.Text('bandana_Sol', {
                     fontSize: 16,
                     fill: 'rgba(0, 247, 255, 0.7)', // Neon cyan, semi-transparent
@@ -749,8 +759,6 @@
                     selectable: false,
                     evented: false
                 });
-
-                // Add watermark and position in bottom-right corner
                 canvas.add(watermark);
                 const textBounds = watermark.getBoundingRect();
                 watermark.set({
@@ -758,11 +766,7 @@
                     top: exportHeight - textBounds.height - 10 // 10px margin from bottom
                 });
 
-                // Adjust canvas for export
-                canvas.setZoom(1);
-                canvas.setWidth(exportWidth);
-                canvas.setHeight(exportHeight);
-                canvas.setViewportTransform([1, 0, 0, 1, -minX + padding, -minY + padding]);
+                // Force render to ensure watermark is included
                 canvas.renderAll();
 
                 // Generate and download image
