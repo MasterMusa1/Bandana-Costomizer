@@ -161,16 +161,6 @@
             border-radius: 50% !important;
             box-shadow: 0 0 5px rgba(255, 0, 122, 0.7) !important;
         }
-        @media screen and (max-width: 768px) {
-            .custom-control {
-                width: 12px !important;
-                height: 12px !important;
-            }
-            .custom-rotate {
-                width: 16px !important;
-                height: 16px !important;
-            }
-        }
     </style>
 </head>
 <body class="flex flex-col items-center min-h-screen p-4">
@@ -211,7 +201,7 @@
                 <button class="hue-btn" style="--hue-color-start: #00ff00; --hue-color-end: #66ff66;" data-hue="120">Green</button>
                 <button class="hue-btn" style="--hue-color-start: #00cc99; --hue-color-end: #66e6b3;" data-hue="150">Teal</button>
                 <button class="hue-btn" style="--hue-color-start: #00ccff; --hue-color-end: #66e6ff;" data-hue="180">Cyan</button>
-                <button class="hue-btn" style="--hue-color-start: #0033ff; --hue-color-end: #6666ff;" data-hue="210">Indigo</button>
+                <लोंतेंत>                <button class="hue-btn" style="--hue-color-start: #0033ff; --hue-color-end: #6666ff;" data-hue="210">Indigo</button>
                 <button class="hue-btn" style="--hue-color-start: #0000ff; --hue-color-end: #6666ff;" data-hue="240">Blue</button>
                 <button class="hue-btn" style="--hue-color-start: #9900ff; --hue-color-end: #cc66ff;" data-hue="270">Purple</button>
                 <button class="hue-btn" style="--hue-color-start: #cc00ff; --hue-color-end: #e666ff;" data-hue="285">Violet</button>
@@ -300,12 +290,9 @@
     </div>
 
     <script>
-        // Detect mobile browsers
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
         // Customize Fabric.js controls
         fabric.Object.prototype.set({
-            cornerSize: isMobile ? 12 : 8,
+            cornerSize: 8,
             cornerStyle: 'circle',
             cornerColor: '#00f7ff',
             cornerStrokeColor: '#1e1e2f',
@@ -324,7 +311,7 @@
                         ctx.save();
                         ctx.translate(left, top);
                         ctx.beginPath();
-                        ctx.arc(0, 0, isMobile ? 8 : 6, 0, 2 * Math.PI);
+                        ctx.arc(0, 0, 6, 0, 2 * Math.PI);
                         ctx.fillStyle = '#ff007a';
                         ctx.strokeStyle = '#1e1e2f';
                         ctx.lineWidth = 1;
@@ -332,7 +319,7 @@
                         ctx.stroke();
                         ctx.restore();
                     },
-                    cornerSize: isMobile ? 16 : 12
+                    cornerSize: 12
                 })
             }
         });
@@ -340,31 +327,13 @@
         const canvas = new fabric.Canvas('imageCanvas', {
             backgroundColor: '#1e1e2f',
             preserveObjectStacking: true,
-            enableRetinaScaling: true,
-            allowTouchScrolling: true
+            enableRetinaScaling: true
         });
         let history = [];
         let redoStack = [];
         let currentBandana = null;
         let originalCanvasWidth = 1200;
         let originalCanvasHeight = 800;
-
-        // Debug handle interactions
-        canvas.on('mouse:down', (event) => {
-            console.log('Mouse down:', event.target, 'Pointer:', event.pointer);
-        });
-        canvas.on('touchstart', (event) => {
-            console.log('Touch start:', event.e.touches, 'Target:', event.target);
-        });
-        canvas.on('object:scaling', (event) => {
-            console.log('Object scaling:', event.transform, 'Object:', event.target);
-        });
-        canvas.on('object:moving', (event) => {
-            console.log('Object moving:', event.transform, 'Object:', event.target);
-        });
-        canvas.on('object:rotating', (event) => {
-            console.log('Object rotating:', event.transform, 'Object:', event.target);
-        });
 
         // Debounce function to limit render calls
         function debounce(func, wait) {
@@ -395,6 +364,7 @@
                     newWidth = newHeight * aspectRatio;
                 }
 
+                // Ensure entire image is visible without excessive zoom
                 const scale = Math.min(newWidth / originalCanvasWidth, newHeight / originalCanvasHeight);
                 canvas.setWidth(originalCanvasWidth);
                 canvas.setHeight(originalCanvasHeight);
@@ -489,6 +459,7 @@
                 reader.onload = function(event) {
                     const img = new Image();
                     img.onload = function() {
+                        // Cap image dimensions based on device
                         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                         const maxDimension = isMobile ? 600 : 1200;
                         let width = img.width;
@@ -540,8 +511,7 @@
                         scaleY: 0.5,
                         selectable: true,
                         hasControls: true,
-                        evented: true,
-                        lockScalingFlip: true
+                        evented: true
                     });
                     img.filters = [new fabric.Image.filters.HueRotation()];
                     canvas.add(img);
@@ -588,11 +558,9 @@
                         scaleY: 0.5,
                         selectable: true,
                         hasControls: true,
-                        evented: true,
-                        lockScalingFlip: true
+                        evented: true
                     });
                     canvas.add(img);
-                    canvas.setActiveObject(img);
                     saveState();
                     canvas.renderAll();
                 });
@@ -620,7 +588,6 @@
                     shadow: '2px 2px 4px rgba(0, 0, 0, 0.3), -1px -1px 2px rgba(0, 247, 255, 0.2)'
                 });
                 canvas.add(textObj);
-                canvas.setActiveObject(textObj);
                 saveState();
                 canvas.renderAll();
             }
@@ -769,32 +736,37 @@
         // Download with Watermark
         document.getElementById('downloadBtn').addEventListener('click', function() {
             try {
+                // Temporarily reset zoom for download
                 const currentZoom = canvas.getZoom();
                 canvas.setZoom(1);
                 canvas.setDimensions({ width: originalCanvasWidth, height: originalCanvasHeight }, { cssOnly: true });
 
+                // Create watermark
                 const watermark = new fabric.Text('bandana_Sol', {
                     fontSize: 16,
-                    fill: 'rgba(0, 247, 255, 0.7)',
+                    fill: 'rgba(0, 247, 255, 0.7)', // Neon cyan, semi-transparent
                     fontFamily: 'Orbitron',
                     selectable: false,
                     evented: false
                 });
 
+                // Position watermark in bottom-right corner
                 canvas.add(watermark);
                 const textBounds = watermark.getBoundingRect();
                 watermark.set({
-                    left: originalCanvasWidth - textBounds.width - 10,
-                    top: originalCanvasHeight - textBounds.height - 10
+                    left: originalCanvasWidth - textBounds.width - 10, // 10px margin from right
+                    top: originalCanvasHeight - textBounds.height - 10 // 10px margin from bottom
                 });
                 canvas.renderAll();
 
+                // Generate and download image
                 const dataURL = canvas.toDataURL({ format: 'png', quality: 1 });
                 const link = document.createElement('a');
                 link.href = dataURL;
                 link.download = 'custom_bandana.png';
                 link.click();
 
+                // Remove watermark and restore zoom
                 canvas.remove(watermark);
                 canvas.setZoom(currentZoom);
                 canvas.setDimensions({ 
@@ -808,7 +780,7 @@
             }
         });
 
-        // Enable handle controls and canvas settings
+        // Enable multi-touch and handle controls
         canvas.on('object:modified', saveState);
         canvas.on('object:moving', saveState);
         canvas.on('object:scaling', saveState);
@@ -826,5 +798,4 @@
         updateButtonStates();
     </script>
 </body>
-</html>
 </html>
