@@ -720,10 +720,26 @@
         // Download with Watermark
         document.getElementById('downloadBtn').addEventListener('click', function() {
             try {
-                // Temporarily reset zoom for download
+                // Save current canvas state
                 const currentZoom = canvas.getZoom();
-                canvas.setZoom(1);
-                canvas.setDimensions({ width: originalCanvasWidth, height: originalCanvasHeight }, { cssOnly: true });
+                const currentWidth = canvas.width;
+                const currentHeight = canvas.height;
+
+                // Calculate bounding box of all objects
+                const objects = canvas.getObjects();
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                objects.forEach(obj => {
+                    const boundingRect = obj.getBoundingRect();
+                    minX = Math.min(minX, boundingRect.left);
+                    minY = Math.min(minY, boundingRect.top);
+                    maxX = Math.max(maxX, boundingRect.left + boundingRect.width);
+                    maxY = Math.max(maxY, boundingRect.top + boundingRect.height);
+                });
+
+                // Add padding (20px) and ensure minimum dimensions
+                const padding = 20;
+                const exportWidth = Math.max(originalCanvasWidth, maxX - minX + 2 * padding);
+                const exportHeight = Math.max(originalCanvasHeight, maxY - minY + 2 * padding);
 
                 // Create watermark
                 const watermark = new fabric.Text('bandana_Sol', {
@@ -734,13 +750,19 @@
                     evented: false
                 });
 
-                // Position watermark in bottom-right corner
+                // Add watermark and position in bottom-right corner
                 canvas.add(watermark);
                 const textBounds = watermark.getBoundingRect();
                 watermark.set({
-                    left: originalCanvasWidth - textBounds.width - 10, // 10px margin from right
-                    top: originalCanvasHeight - textBounds.height - 10 // 10px margin from bottom
+                    left: exportWidth - textBounds.width - 10, // 10px margin from right
+                    top: exportHeight - textBounds.height - 10 // 10px margin from bottom
                 });
+
+                // Adjust canvas for export
+                canvas.setZoom(1);
+                canvas.setWidth(exportWidth);
+                canvas.setHeight(exportHeight);
+                canvas.setViewportTransform([1, 0, 0, 1, -minX + padding, -minY + padding]);
                 canvas.renderAll();
 
                 // Generate and download image
@@ -750,13 +772,12 @@
                 link.download = 'custom_bandana.png';
                 link.click();
 
-                // Remove watermark and restore zoom
+                // Restore original canvas state
                 canvas.remove(watermark);
                 canvas.setZoom(currentZoom);
-                canvas.setDimensions({ 
-                    width: originalCanvasWidth * currentZoom, 
-                    height: originalCanvasHeight * currentZoom 
-                }, { cssOnly: true });
+                canvas.setWidth(currentWidth);
+                canvas.setHeight(currentHeight);
+                canvas.setViewportTransform([currentZoom, 0, 0, currentZoom, 0, 0]);
                 canvas.renderAll();
             } catch (error) {
                 alert('Failed to download image. Ensure all overlays are loaded correctly.');
