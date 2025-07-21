@@ -290,7 +290,6 @@
     </div>
 
     <script>
-responsive-canvas
         // Detect mobile browsers
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -329,41 +328,6 @@ responsive-canvas
                 }
             });
         }
-
-        // Customize Fabric.js controls
-        fabric.Object.prototype.set({
-            cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 12 : 8,
-            cornerStyle: 'circle',
-            cornerColor: '#00f7ff',
-            cornerStrokeColor: '#1e1e2f',
-            cornerBackgroundColor: '#00f7ff',
-            rotatingPointOffset: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 20 : 20,
-            controls: {
-                ...fabric.Object.prototype.controls,
-                mtr: new fabric.Control({
-                    x: 0,
-                    y: -0.5,
-                    offsetY: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? -20 : -20,
-                    cursorStyle: 'pointer',
-                    actionHandler: fabric.controlsUtils.rotationWithSnapping,
-                    actionName: 'rotate',
-                    render: function(ctx, left, top, styleOverride, fabricObject) {
-                        ctx.save();
-                        ctx.translate(left, top);
-                        ctx.beginPath();
-                        ctx.arc(0, 0, /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 8 : 6, 0, 2 * Math.PI);
-                        ctx.fillStyle = '#ff007a';
-                        ctx.strokeStyle = '#1e1e2f';
-                        ctx.lineWidth = 1;
-                        ctx.fill();
-                        ctx.stroke();
-                        ctx.restore();
-                    },
-                    cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 16 : 12
-                })
-            }
-        });
-MasterMusa1-patch-1
 
         const canvas = new fabric.Canvas('imageCanvas', {
             backgroundColor: '#1e1e2f',
@@ -580,19 +544,8 @@ MasterMusa1-patch-1
             document.getElementById('lockBtn').disabled = true;
             document.getElementById('lockBtn').textContent = 'Lock Selected';
             updateHueButtons();
-    
-        // Debug touch events
-        canvas.on('touchstart', (event) => {
-            console.log('Touch start:', event.e.touches, 'Target:', event.target);
-        });
-        canvas.on('touchmove', (event) => {
-            console.log('Touch move:', event.e.touches, 'Target:', event.target);
-        });
-        canvas.on('object:scaling', (event) => {
-            console.log('Object scaling:', event.transform, 'Object:', event.target);
         });
 
-MasterMusa1-patch-1
         // Image Upload
         document.getElementById('imageUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -651,10 +604,7 @@ MasterMusa1-patch-1
                         scaleX: 0.5,
                         scaleY: 0.5,
                         selectable: true,
-responsive-canvas
                         hasControls: !isMobile,
-                        hasControls: true,
-MasterMusa1-patch-1
                         evented: true,
                         lockScalingFlip: true
                     });
@@ -702,11 +652,7 @@ MasterMusa1-patch-1
                         scaleX: 0.5,
                         scaleY: 0.5,
                         selectable: true,
-responsive-canvas
                         hasControls: !isMobile,
-
-                        hasControls: true,
- MasterMusa1-patch-1
                         evented: true,
                         lockScalingFlip: true
                     });
