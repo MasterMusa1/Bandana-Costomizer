@@ -722,34 +722,14 @@
             try {
                 // Save current canvas state
                 const currentZoom = canvas.getZoom();
-                const currentWidth = canvas.width;
-                const currentHeight = canvas.height;
+                const currentWidth = canvas.width / currentZoom; // Get original width
+                const currentHeight = canvas.height / currentZoom; // Get original height
 
-                // Calculate bounding box of all objects (excluding watermark)
-                const objects = canvas.getObjects();
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                objects.forEach(obj => {
-                    const boundingRect = obj.getBoundingRect();
-                    minX = Math.min(minX, boundingRect.left);
-                    minY = Math.min(minY, boundingRect.top);
-                    maxX = Math.max(maxX, boundingRect.left + boundingRect.width);
-                    maxY = Math.max(maxY, boundingRect.top + boundingRect.height);
-                });
-
-                // Add padding (20px) and ensure minimum dimensions
-                const padding = 20;
-                const exportWidth = Math.max(originalCanvasWidth, maxX - minX + 2 * padding);
-                const exportHeight = Math.max(originalCanvasHeight, maxY - minY + 2 * padding);
-
-                // Center content by adjusting offsets
-                const offsetX = (exportWidth - (maxX - minX)) / 2 - minX;
-                const offsetY = (exportHeight - (maxY - minY)) / 2 - minY;
-
-                // Adjust canvas for export
+                // Adjust canvas for export to match current visible dimensions
                 canvas.setZoom(1);
-                canvas.setWidth(exportWidth);
-                canvas.setHeight(exportHeight);
-                canvas.setViewportTransform([1, 0, 0, 1, offsetX, offsetY]);
+                canvas.setWidth(currentWidth);
+                canvas.setHeight(currentHeight);
+                canvas.setViewportTransform([1, 0, 0, 1, 0, 0]); // Reset to origin
 
                 // Create and add watermark
                 const watermark = new fabric.Text('bandana_Sol', {
@@ -762,8 +742,8 @@
                 canvas.add(watermark);
                 const textBounds = watermark.getBoundingRect();
                 watermark.set({
-                    left: exportWidth - textBounds.width - 10, // 10px margin from right
-                    top: exportHeight - textBounds.height - 10 // 10px margin from bottom
+                    left: currentWidth - textBounds.width - 10, // 10px margin from right
+                    top: currentHeight - textBounds.height - 10 // 10px margin from bottom
                 });
 
                 // Force render to ensure watermark is included
@@ -779,9 +759,7 @@
                 // Restore original canvas state
                 canvas.remove(watermark);
                 canvas.setZoom(currentZoom);
-                canvas.setWidth(currentWidth);
-                canvas.setHeight(currentHeight);
-                canvas.setViewportTransform([currentZoom, 0, 0, currentZoom, 0, 0]);
+                canvas.setDimensions({ width: currentWidth * currentZoom, height: currentHeight * currentZoom }, { cssOnly: true });
                 canvas.renderAll();
             } catch (error) {
                 alert('Failed to download image. Ensure all overlays are loaded correctly.');
