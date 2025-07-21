@@ -161,16 +161,6 @@
             border-radius: 50% !important;
             box-shadow: 0 0 5px rgba(255, 0, 122, 0.7) !important;
         }
-        @media screen and (max-width: 768px) {
-            .custom-control {
-                width: 12px !important;
-                height: 12px !important;
-            }
-            .custom-rotate {
-                width: 16px !important;
-                height: 16px !important;
-            }
-        }
     </style>
 </head>
 <body class="flex flex-col items-center min-h-screen p-4">
@@ -300,6 +290,46 @@
     </div>
 
     <script>
+responsive-canvas
+        // Detect mobile browsers
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // Customize Fabric.js controls (desktop only)
+        if (!isMobile) {
+            fabric.Object.prototype.set({
+                cornerSize: 8,
+                cornerStyle: 'circle',
+                cornerColor: '#00f7ff',
+                cornerStrokeColor: '#1e1e2f',
+                cornerBackgroundColor: '#00f7ff',
+                rotatingPointOffset: 20,
+                controls: {
+                    ...fabric.Object.prototype.controls,
+                    mtr: new fabric.Control({
+                        x: 0,
+                        y: -0.5,
+                        offsetY: -20,
+                        cursorStyle: 'pointer',
+                        actionHandler: fabric.controlsUtils.rotationWithSnapping,
+                        actionName: 'rotate',
+                        render: function(ctx, left, top, styleOverride, fabricObject) {
+                            ctx.save();
+                            ctx.translate(left, top);
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+                            ctx.fillStyle = '#ff007a';
+                            ctx.strokeStyle = '#1e1e2f';
+                            ctx.lineWidth = 1;
+                            ctx.fill();
+                            ctx.stroke();
+                            ctx.restore();
+                        },
+                        cornerSize: 12
+                    })
+                }
+            });
+        }
+
         // Customize Fabric.js controls
         fabric.Object.prototype.set({
             cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 12 : 8,
@@ -333,6 +363,7 @@
                 })
             }
         });
+MasterMusa1-patch-1
 
         const canvas = new fabric.Canvas('imageCanvas', {
             backgroundColor: '#1e1e2f',
@@ -345,6 +376,96 @@
         let currentBandana = null;
         let originalCanvasWidth = 1200;
         let originalCanvasHeight = 800;
+
+        // Pinch and zoom gesture handling (mobile only)
+        if (isMobile) {
+            let lastTouch = null;
+            let initialDistance = null;
+            let initialAngle = null;
+            let initialScale = null;
+            let initialPosition = null;
+
+            canvas.on('touchstart', (event) => {
+                const touches = event.e.touches;
+                const activeObject = canvas.getActiveObject();
+                if (!activeObject || !activeObject.selectable) return;
+
+                console.log('Touch start:', touches, 'Target:', activeObject);
+
+                if (touches.length === 1) {
+                    // Single-finger drag
+                    lastTouch = {
+                        x: touches[0].clientX,
+                        y: touches[0].clientY
+                    };
+                    initialPosition = { left: activeObject.left, top: activeObject.top };
+                } else if (touches.length === 2) {
+                    // Two-finger pinch/rotate
+                    const x1 = touches[0].clientX, y1 = touches[0].clientY;
+                    const x2 = touches[1].clientX, y2 = touches[1].clientY;
+                    initialDistance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                    initialAngle = Math.atan2(y2 - y1, x2 - x1);
+                    initialScale = activeObject.scaleX;
+                }
+            });
+
+            canvas.on('touchmove', (event) => {
+                const touches = event.e.touches;
+                const activeObject = canvas.getActiveObject();
+                if (!activeObject || !activeObject.selectable) return;
+
+                console.log('Touch move:', touches, 'Target:', activeObject);
+
+                if (touches.length === 1 && lastTouch) {
+                    // Single-finger drag
+                    const zoom = canvas.getZoom();
+                    const deltaX = (touches[0].clientX - lastTouch.x) / zoom;
+                    const deltaY = (touches[0].clientY - lastTouch.y) / zoom;
+                    activeObject.set({
+                        left: initialPosition.left + deltaX,
+                        top: initialPosition.top + deltaY
+                    });
+                    activeObject.setCoords();
+                    canvas.renderAll();
+                } else if (touches.length === 2) {
+                    // Two-finger pinch/rotate
+                    const x1 = touches[0].clientX, y1 = touches[0].clientY;
+                    const x2 = touches[1].clientX, y2 = touches[1].clientY;
+                    const currentDistance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                    const currentAngle = Math.atan2(y2 - y1, x2 - x1);
+                    const scaleFactor = initialDistance ? currentDistance / initialDistance : 1;
+                    const rotationDelta = initialAngle ? (currentAngle - initialAngle) * (180 / Math.PI) : 0;
+
+                    activeObject.set({
+                        scaleX: initialScale * scaleFactor,
+                        scaleY: initialScale * scaleFactor,
+                        angle: activeObject.angle + rotationDelta
+                    });
+                    activeObject.setCoords();
+                    canvas.renderAll();
+
+                    console.log('Pinch/rotate:', { scaleFactor, rotationDelta });
+                }
+            });
+
+            canvas.on('touchend', () => {
+                const activeObject = canvas.getActiveObject();
+                if (activeObject) {
+                    saveState();
+                }
+                lastTouch = null;
+                initialDistance = null;
+                initialAngle = null;
+                initialScale = null;
+                initialPosition = null;
+                console.log('Touch end');
+            });
+        }
+
+        // Debug scaling events (for desktop handles)
+        canvas.on('object:scaling', (event) => {
+            console.log('Object scaling:', event.transform, 'Object:', event.target);
+        });
 
         // Debounce function to limit render calls
         function debounce(func, wait) {
@@ -459,8 +580,7 @@
             document.getElementById('lockBtn').disabled = true;
             document.getElementById('lockBtn').textContent = 'Lock Selected';
             updateHueButtons();
-        });
-
+    
         // Debug touch events
         canvas.on('touchstart', (event) => {
             console.log('Touch start:', event.e.touches, 'Target:', event.target);
@@ -472,6 +592,7 @@
             console.log('Object scaling:', event.transform, 'Object:', event.target);
         });
 
+MasterMusa1-patch-1
         // Image Upload
         document.getElementById('imageUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -530,7 +651,10 @@
                         scaleX: 0.5,
                         scaleY: 0.5,
                         selectable: true,
+responsive-canvas
+                        hasControls: !isMobile,
                         hasControls: true,
+MasterMusa1-patch-1
                         evented: true,
                         lockScalingFlip: true
                     });
@@ -578,7 +702,11 @@
                         scaleX: 0.5,
                         scaleY: 0.5,
                         selectable: true,
+responsive-canvas
+                        hasControls: !isMobile,
+
                         hasControls: true,
+ MasterMusa1-patch-1
                         evented: true,
                         lockScalingFlip: true
                     });
@@ -606,7 +734,7 @@
                     fontWeight: 'bold',
                     fontStyle: style.includes('italic') ? 'italic' : 'normal',
                     selectable: true,
-                    hasControls: true,
+                    hasControls: !isMobile,
                     evented: true,
                     shadow: '2px 2px 4px rgba(0, 0, 0, 0.3), -1px -1px 2px rgba(0, 247, 255, 0.2)'
                 });
@@ -673,7 +801,7 @@
                 const isLocked = !activeObject.selectable;
                 activeObject.set({
                     selectable: isLocked,
-                    hasControls: isLocked,
+                    hasControls: isLocked && !isMobile,
                     evented: isLocked
                 });
                 if (!isLocked && activeObject === currentBandana) {
@@ -695,7 +823,7 @@
                 if (obj !== canvas.getObjects()[0]) { // Skip base image
                     obj.set({
                         selectable: true,
-                        hasControls: true,
+                        hasControls: !isMobile,
                         evented: true
                     });
                 }
@@ -727,6 +855,11 @@
             if (history.length > 1) {
                 redoStack.push(history.pop());
                 canvas.loadFromJSON(history[history.length - 1], () => {
+                    canvas.getObjects().forEach(obj => {
+                        if (obj !== canvas.getObjects()[0]) {
+                            obj.set({ hasControls: !isMobile });
+                        }
+                    });
                     canvas.renderAll();
                     document.getElementById('undoBtn').disabled = history.length <= 1;
                     document.getElementById('redoBtn').disabled = false;
@@ -745,6 +878,11 @@
                 const state = redoStack.pop();
                 history.push(state);
                 canvas.loadFromJSON(state, () => {
+                    canvas.getObjects().forEach(obj => {
+                        if (obj !== canvas.getObjects()[0]) {
+                            obj.set({ hasControls: !isMobile });
+                        }
+                    });
                     canvas.renderAll();
                     document.getElementById('redoBtn').disabled = redoStack.length === 0;
                     document.getElementById('undoBtn').disabled = false;
