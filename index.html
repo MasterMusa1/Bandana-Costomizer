@@ -18,30 +18,12 @@
             position: relative;
             width: 100%;
             max-width: 1200px;
-            max-height: 60vh;
             border: 2px solid #00f7ff;
             box-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
             border-radius: 10px;
             overflow: hidden;
         }
-        #imageCanvas {
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        @media screen and (max-width: 768px) {
-            #canvas-container {
-                max-width: 90vw;
-                max-height: 50vh;
-            }
-            #imageCanvas {
-                max-width: 90vw;
-                max-height: 50vh;
-            }
-        }
+        #imageCanvas { width: 100%; height: 100%; touch-action: none; }
         .hue-btn {
             padding: 8px 16px;
             border-radius: 6px;
@@ -201,7 +183,7 @@
                 <button class="hue-btn" style="--hue-color-start: #00ff00; --hue-color-end: #66ff66;" data-hue="120">Green</button>
                 <button class="hue-btn" style="--hue-color-start: #00cc99; --hue-color-end: #66e6b3;" data-hue="150">Teal</button>
                 <button class="hue-btn" style="--hue-color-start: #00ccff; --hue-color-end: #66e6ff;" data-hue="180">Cyan</button>
-                <लोंतेंत>                <button class="hue-btn" style="--hue-color-start: #0033ff; --hue-color-end: #6666ff;" data-hue="210">Indigo</button>
+                <button class="hue-btn" style="--hue-color-start: #0033ff; --hue-color-end: #6666ff;" data-hue="210">Indigo</button>
                 <button class="hue-btn" style="--hue-color-start: #0000ff; --hue-color-end: #6666ff;" data-hue="240">Blue</button>
                 <button class="hue-btn" style="--hue-color-start: #9900ff; --hue-color-end: #cc66ff;" data-hue="270">Purple</button>
                 <button class="hue-btn" style="--hue-color-start: #cc00ff; --hue-color-end: #e666ff;" data-hue="285">Violet</button>
@@ -220,9 +202,6 @@
                 <option value="https://i.imgur.com/MX10kLM.png">X</option>
                 <option value="https://i.imgur.com/ww2FqF2.png">USA</option>
                 <option value="https://i.imgur.com/JsRg8u3.png">GROK</option>
-                <option value="https://i.imgur.com/Fp6OCKQ.png">Pump</option>
-                <option value="https://i.imgur.com/iaGu3Pa.png">Sol 2</option>
-                <option value="https://i.imgur.com/veQU4yh.png">Grok 2</option>
             </select>
         </div>
 
@@ -353,7 +332,7 @@
             try {
                 const container = document.getElementById('canvas-container');
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                const maxWidth = isMobile ? Math.min(container.offsetWidth, window.innerWidth * 0.9) : Math.min(container.offsetWidth, 1200);
+                const maxWidth = isMobile ? Math.min(container.offsetWidth, 600) : Math.min(container.offsetWidth, 1200);
                 const maxHeight = isMobile ? window.innerHeight * 0.5 : window.innerHeight * 0.6;
                 const aspectRatio = originalCanvasWidth / originalCanvasHeight;
                 let newWidth = maxWidth;
@@ -364,8 +343,10 @@
                     newWidth = newHeight * aspectRatio;
                 }
 
-                // Ensure entire image is visible without excessive zoom
-                const scale = Math.min(newWidth / originalCanvasWidth, newHeight / originalCanvasHeight);
+                // Apply minimum scale for large images on mobile
+                const minScale = isMobile ? 0.5 : 0.3;
+                const scale = Math.max(minScale, Math.min(newWidth / originalCanvasWidth, newHeight / originalCanvasHeight));
+
                 canvas.setWidth(originalCanvasWidth);
                 canvas.setHeight(originalCanvasHeight);
                 canvas.setZoom(scale);
