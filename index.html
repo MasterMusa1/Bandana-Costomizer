@@ -147,7 +147,7 @@
         }
         .custom-control {
             width: 8px !important;
-            height: 8px !important;
+            height: -clear: both;
             background: #00f7ff !important;
             border: 1px solid #1e1e2f !important;
             border-radius: 50% !important;
@@ -160,6 +160,16 @@
             border: 1px solid #1e1e2f !important;
             border-radius: 50% !important;
             box-shadow: 0 0 5px rgba(255, 0, 122, 0.7) !important;
+        }
+        @media screen and (max-width: 768px) {
+            .custom-control {
+                width: 12px !important;
+                height: 12px !important;
+            }
+            .custom-rotate {
+                width: 16px !important;
+                height: 16px !important;
+            }
         }
     </style>
 </head>
@@ -220,6 +230,9 @@
                 <option value="https://i.imgur.com/MX10kLM.png">X</option>
                 <option value="https://i.imgur.com/ww2FqF2.png">USA</option>
                 <option value="https://i.imgur.com/JsRg8u3.png">GROK</option>
+                <option value="https://i.imgur.com/Fp6OCKQ.png">Pump</option>
+                <option value="https://i.imgur.com/iaGu3Pa.png">Sol 2</option>
+                <option value="https://i.imgur.com/veQU4yh.png">Grok 2</option>
             </select>
         </div>
 
@@ -289,7 +302,7 @@
     <script>
         // Customize Fabric.js controls
         fabric.Object.prototype.set({
-            cornerSize: 8,
+            cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 12 : 8,
             cornerStyle: 'circle',
             cornerColor: '#00f7ff',
             cornerStrokeColor: '#1e1e2f',
@@ -308,7 +321,7 @@
                         ctx.save();
                         ctx.translate(left, top);
                         ctx.beginPath();
-                        ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+                        ctx.arc(0, 0, /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 8 : 6, 0, 2 * Math.PI);
                         ctx.fillStyle = '#ff007a';
                         ctx.strokeStyle = '#1e1e2f';
                         ctx.lineWidth = 1;
@@ -316,7 +329,7 @@
                         ctx.stroke();
                         ctx.restore();
                     },
-                    cornerSize: 12
+                    cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 16 : 12
                 })
             }
         });
@@ -324,7 +337,8 @@
         const canvas = new fabric.Canvas('imageCanvas', {
             backgroundColor: '#1e1e2f',
             preserveObjectStacking: true,
-            enableRetinaScaling: true
+            enableRetinaScaling: true,
+            allowTouchScrolling: true
         });
         let history = [];
         let redoStack = [];
@@ -361,7 +375,6 @@
                     newWidth = newHeight * aspectRatio;
                 }
 
-                // Ensure entire image is visible without excessive zoom
                 const scale = Math.min(newWidth / originalCanvasWidth, newHeight / originalCanvasHeight);
                 canvas.setWidth(originalCanvasWidth);
                 canvas.setHeight(originalCanvasHeight);
@@ -446,6 +459,17 @@
             document.getElementById('lockBtn').disabled = true;
             document.getElementById('lockBtn').textContent = 'Lock Selected';
             updateHueButtons();
+        });
+
+        // Debug touch events
+        canvas.on('touchstart', (event) => {
+            console.log('Touch start:', event.e.touches);
+        });
+        canvas.on('touchmove', (event) => {
+            console.log('Touch move:', event.e.touches);
+        });
+        canvas.on('object:scaling', (event) => {
+            console.log('Object scaling:', event.transform);
         });
 
         // Image Upload
