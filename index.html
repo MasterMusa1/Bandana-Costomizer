@@ -722,14 +722,45 @@
             try {
                 // Save current canvas state
                 const currentZoom = canvas.getZoom();
-                const currentWidth = canvas.width / currentZoom; // Get original width
-                const currentHeight = canvas.height / currentZoom; // Get original height
+                const currentWidth = canvas.width / currentZoom; // Current unzoomed width
+                const currentHeight = canvas.height / currentZoom; // Current unzoomed height
 
-                // Adjust canvas for export to match current visible dimensions
+                // Use original base image dimensions for export
+                const exportWidth = originalCanvasWidth;
+                const exportHeight = originalCanvasHeight;
+
+                // Adjust canvas for export to original ratio
                 canvas.setZoom(1);
-                canvas.setWidth(currentWidth);
-                canvas.setHeight(currentHeight);
+                canvas.setWidth(exportWidth);
+                canvas.setHeight(exportHeight);
                 canvas.setViewportTransform([1, 0, 0, 1, 0, 0]); // Reset to origin
+
+                // Calculate scaling factor to fit content within original dimensions
+                const objects = canvas.getObjects();
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                objects.forEach(obj => {
+                    const boundingRect = obj.getBoundingRect();
+                    minX = Math.min(minX, boundingRect.left);
+                    minY = Math.min(minY, boundingRect.top);
+                    maxX = Math.max(maxX, boundingRect.left + boundingRect.width);
+                    maxY = Math.max(maxY, boundingRect.top + boundingRect.height);
+                });
+                const contentWidth = maxX - minX;
+                const contentHeight = maxY - minY;
+                const scaleX = exportWidth / contentWidth;
+                const scaleY = exportHeight / contentHeight;
+                const scale = Math.min(scaleX, scaleY); // Scale to fit within original dimensions
+
+                // Apply scaling and reposition to center content
+                canvas.getObjects().forEach(obj => {
+                    obj.set({
+                        scaleX: obj.scaleX * scale,
+                        scaleY: obj.scaleY * scale,
+                        left: (obj.left - minX) * scale,
+                        top: (obj.top - minY) * scale
+                    });
+                });
+                canvas.renderAll();
 
                 // Create and add watermark
                 const watermark = new fabric.Text('bandana_Sol', {
@@ -742,8 +773,8 @@
                 canvas.add(watermark);
                 const textBounds = watermark.getBoundingRect();
                 watermark.set({
-                    left: currentWidth - textBounds.width - 10, // 10px margin from right
-                    top: currentHeight - textBounds.height - 10 // 10px margin from bottom
+                    left: exportWidth - textBounds.width - 10, // 10px margin from right
+                    top: exportHeight - textBounds.height - 10 // 10px margin from bottom
                 });
 
                 // Force render to ensure watermark is included
@@ -758,6 +789,14 @@
 
                 // Restore original canvas state
                 canvas.remove(watermark);
+                canvas.getObjects().forEach(obj => {
+                    obj.set({
+                        scaleX: obj.scaleX / scale,
+                        scaleY: obj.scaleY / scale,
+                        left: (obj.left / scale) + minX,
+                        top: (obj.top / scale) + minY
+                    });
+                });
                 canvas.setZoom(currentZoom);
                 canvas.setDimensions({ width: currentWidth * currentZoom, height: currentHeight * currentZoom }, { cssOnly: true });
                 canvas.renderAll();
