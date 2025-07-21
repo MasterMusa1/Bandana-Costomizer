@@ -163,12 +163,12 @@
         }
         @media screen and (max-width: 768px) {
             .custom-control {
-                width: 14px !important;
-                height: 14px !important;
+                width: 12px !important;
+                height: 12px !important;
             }
             .custom-rotate {
-                width: 18px !important;
-                height: 18px !important;
+                width: 16px !important;
+                height: 16px !important;
             }
         }
     </style>
@@ -302,18 +302,18 @@
     <script>
         // Customize Fabric.js controls
         fabric.Object.prototype.set({
-            cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 14 : 8,
+            cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 12 : 8,
             cornerStyle: 'circle',
             cornerColor: '#00f7ff',
             cornerStrokeColor: '#1e1e2f',
             cornerBackgroundColor: '#00f7ff',
-            rotatingPointOffset: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 30 : 20,
+            rotatingPointOffset: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 20 : 20,
             controls: {
                 ...fabric.Object.prototype.controls,
                 mtr: new fabric.Control({
                     x: 0,
                     y: -0.5,
-                    offsetY: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? -30 : -20,
+                    offsetY: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? -20 : -20,
                     cursorStyle: 'pointer',
                     actionHandler: fabric.controlsUtils.rotationWithSnapping,
                     actionName: 'rotate',
@@ -321,7 +321,7 @@
                         ctx.save();
                         ctx.translate(left, top);
                         ctx.beginPath();
-                        ctx.arc(0, 0, /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 10 : 6, 0, 2 * Math.PI);
+                        ctx.arc(0, 0, /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 8 : 6, 0, 2 * Math.PI);
                         ctx.fillStyle = '#ff007a';
                         ctx.strokeStyle = '#1e1e2f';
                         ctx.lineWidth = 1;
@@ -329,7 +329,7 @@
                         ctx.stroke();
                         ctx.restore();
                     },
-                    cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 18 : 12
+                    cornerSize: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 16 : 12
                 })
             }
         });
@@ -338,8 +338,7 @@
             backgroundColor: '#1e1e2f',
             preserveObjectStacking: true,
             enableRetinaScaling: true,
-            allowTouchScrolling: false, // Disable to prioritize handle interactions
-            enablePointerEvents: true // Enable pointer events for touch support
+            allowTouchScrolling: true
         });
         let history = [];
         let redoStack = [];
@@ -380,20 +379,6 @@
                 canvas.setWidth(originalCanvasWidth);
                 canvas.setHeight(originalCanvasHeight);
                 canvas.setZoom(scale);
-
-                // Adjust object coordinates for zoom
-                canvas.getObjects().forEach(obj => {
-                    if (obj.selectable) {
-                        obj.set({
-                            scaleX: obj.scaleX / scale,
-                            scaleY: obj.scaleY / scale,
-                            left: obj.left / scale,
-                            top: obj.top / scale
-                        });
-                        obj.setCoords();
-                    }
-                });
-
                 canvas.setDimensions({ width: originalCanvasWidth * scale, height: originalCanvasHeight * scale }, { cssOnly: true });
                 canvas.renderAll();
             } catch (error) {
@@ -478,13 +463,13 @@
 
         // Debug touch events
         canvas.on('touchstart', (event) => {
-            console.log('Touch start:', event.e.touches);
+            console.log('Touch start:', event.e.touches, 'Target:', event.target);
         });
         canvas.on('touchmove', (event) => {
-            console.log('Touch move:', event.e.touches);
+            console.log('Touch move:', event.e.touches, 'Target:', event.target);
         });
         canvas.on('object:scaling', (event) => {
-            console.log('Object scaling:', event.transform);
+            console.log('Object scaling:', event.transform, 'Object:', event.target);
         });
 
         // Image Upload
@@ -495,7 +480,6 @@
                 reader.onload = function(event) {
                     const img = new Image();
                     img.onload = function() {
-                        // Cap image dimensions based on device
                         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                         const maxDimension = isMobile ? 600 : 1200;
                         let width = img.width;
@@ -540,15 +524,15 @@
                         alert('Failed to load bandana overlay.');
                         return;
                     }
-                    const currentZoom = canvas.getZoom();
                     img.set({
-                        left: canvas.width / 4 / currentZoom,
-                        top: canvas.height / 4 / currentZoom,
-                        scaleX: 0.5 / currentZoom,
-                        scaleY: 0.5 / currentZoom,
+                        left: canvas.width / 4,
+                        top: canvas.height / 4,
+                        scaleX: 0.5,
+                        scaleY: 0.5,
                         selectable: true,
                         hasControls: true,
-                        evented: true
+                        evented: true,
+                        lockScalingFlip: true
                     });
                     img.filters = [new fabric.Image.filters.HueRotation()];
                     canvas.add(img);
@@ -588,16 +572,15 @@
                         alert('Failed to load logo overlay.');
                         return;
                     }
-                    const currentZoom = canvas.getZoom();
                     img.set({
-                        left: canvas.width / 4 / currentZoom,
-                        top: canvas.height / 4 / currentZoom,
-                        scaleX: 0.5 / currentZoom,
-                        scaleY: 0.5 / currentZoom,
+                        left: canvas.width / 4,
+                        top: canvas.height / 4,
+                        scaleX: 0.5,
+                        scaleY: 0.5,
                         selectable: true,
                         hasControls: true,
                         evented: true,
-                        lockScalingFlip: true // Prevent flipping during scaling
+                        lockScalingFlip: true
                     });
                     canvas.add(img);
                     canvas.setActiveObject(img);
@@ -614,11 +597,10 @@
             const font = document.getElementById('fontSelect').value;
             const style = document.getElementById('styleSelect').value;
             if (text) {
-                const currentZoom = canvas.getZoom();
                 const textObj = new fabric.Text(text, {
-                    left: canvas.width / 4 / currentZoom,
-                    top: canvas.height / 4 / currentZoom,
-                    fontSize: 20 / currentZoom,
+                    left: canvas.width / 4,
+                    top: canvas.height / 4,
+                    fontSize: 20,
                     fill: color,
                     fontFamily: font,
                     fontWeight: 'bold',
@@ -778,37 +760,32 @@
         // Download with Watermark
         document.getElementById('downloadBtn').addEventListener('click', function() {
             try {
-                // Temporarily reset zoom for download
                 const currentZoom = canvas.getZoom();
                 canvas.setZoom(1);
                 canvas.setDimensions({ width: originalCanvasWidth, height: originalCanvasHeight }, { cssOnly: true });
 
-                // Create watermark
                 const watermark = new fabric.Text('bandana_Sol', {
                     fontSize: 16,
-                    fill: 'rgba(0, 247, 255, 0.7)', // Neon cyan, semi-transparent
+                    fill: 'rgba(0, 247, 255, 0.7)',
                     fontFamily: 'Orbitron',
                     selectable: false,
                     evented: false
                 });
 
-                // Position watermark in bottom-right corner
                 canvas.add(watermark);
                 const textBounds = watermark.getBoundingRect();
                 watermark.set({
-                    left: originalCanvasWidth - textBounds.width - 10, // 10px margin from right
-                    top: originalCanvasHeight - textBounds.height - 10 // 10px margin from bottom
+                    left: originalCanvasWidth - textBounds.width - 10,
+                    top: originalCanvasHeight - textBounds.height - 10
                 });
                 canvas.renderAll();
 
-                // Generate and download image
                 const dataURL = canvas.toDataURL({ format: 'png', quality: 1 });
                 const link = document.createElement('a');
                 link.href = dataURL;
                 link.download = 'custom_bandana.png';
                 link.click();
 
-                // Remove watermark and restore zoom
                 canvas.remove(watermark);
                 canvas.setZoom(currentZoom);
                 canvas.setDimensions({ 
